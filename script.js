@@ -1,1089 +1,510 @@
 /* =========================================================
-   WEATHER DASHBOARD
-   Open-Meteo data through secure Vercel backend
+   WEATHER DASHBOARD - COMPLETE SCRIPT (CORRECTED)
    ========================================================= */
-
 
 /* =========================================================
-   GLOBAL VARIABLES
+   GLOBAL VARIABLES & CONFIGURATION
    ========================================================= */
 
-let weatherData = null;
+let currentCity = "";
+let midnightTimer = null;
 
+const API_ENDPOINT = "/api/weather";
 
 /* =========================================================
-   ELEMENTS
+   DOM ELEMENTS
    ========================================================= */
 
-const cityInput = document.getElementById("cityInput");
-const searchBtn = document.getElementById("searchBtn");
-
-const cityName = document.getElementById("cityName");
-const temperature = document.getElementById("temperature");
-const weatherCondition = document.getElementById("weatherCondition");
-
-const humidity = document.getElementById("humidity");
-const windSpeed = document.getElementById("windSpeed");
-const feelsLike = document.getElementById("feelsLike");
-
-const forecastContainer =
-    document.getElementById("forecastContainer");
-
-const hourlyContainer =
-    document.getElementById("hourlyContainer");
-
-const sunrise = document.getElementById("sunrise");
-const sunset = document.getElementById("sunset");
-const visibility = document.getElementById("visibility");
-const pressure = document.getElementById("pressure");
-const cloudiness = document.getElementById("cloudiness");
-
-const recentSearchesContainer =
-    document.getElementById("recentSearches");
-
-const clearSearchesBtn =
-    document.getElementById("clearSearches");
-
-const darkModeBtn =
-    document.getElementById("darkModeBtn");
-
+const searchInput = document.getElementById("searchInput");
+const searchButton = document.getElementById("searchButton");
+const currentCityElement = document.getElementById("city");
+const currentTemperature = document.getElementById("temperature");
+const currentCondition = document.getElementById("condition");
+const humidityElement = document.getElementById("humidity");
+const windElement = document.getElementById("wind");
+const feelsLikeElement = document.getElementById("feelsLike");
+const sunriseElement = document.getElementById("sunrise");
+const sunsetElement = document.getElementById("sunset");
+const visibilityElement = document.getElementById("visibility");
+const pressureElement = document.getElementById("pressure");
+const cloudinessElement = document.getElementById("cloudiness");
+const forecastContainer = document.getElementById("forecastContainer");
+const hourlyContainer = document.getElementById("hourlyContainer");
+const recentSearchesContainer = document.getElementById("recentSearches");
+const clearSearchesButton = document.getElementById("clearSearches");
+const darkModeButton = document.getElementById("darkModeToggle");
 
 /* =========================================================
-   WEATHER CODE CONVERSION
+   PAGE LOAD & LIFECYCLE
    ========================================================= */
 
-function convertWeatherCode(code) {
+document.addEventListener("DOMContentLoaded", () => {
+    loadRecentSearches();
+    setupSearch();
+    setupDarkMode();
+    scheduleMidnightRefresh();
 
-    const weatherCodes = {
-
-        0: {
-            main: "Clear Sky",
-            icon: "☀️"
-        },
-
-        1: {
-            main: "Mainly Clear",
-            icon: "🌤️"
-        },
-
-        2: {
-            main: "Partly Cloudy",
-            icon: "⛅"
-        },
-
-        3: {
-            main: "Overcast",
-            icon: "☁️"
-        },
-
-        45: {
-            main: "Fog",
-            icon: "🌫️"
-        },
-
-        48: {
-            main: "Fog",
-            icon: "🌫️"
-        },
-
-        51: {
-            main: "Drizzle",
-            icon: "🌦️"
-        },
-
-        53: {
-            main: "Drizzle",
-            icon: "🌦️"
-        },
-
-        55: {
-            main: "Heavy Drizzle",
-            icon: "🌧️"
-        },
-
-        61: {
-            main: "Rain",
-            icon: "🌧️"
-        },
-
-        63: {
-            main: "Rain",
-            icon: "🌧️"
-        },
-
-        65: {
-            main: "Heavy Rain",
-            icon: "🌧️"
-        },
-
-        71: {
-            main: "Snow",
-            icon: "🌨️"
-        },
-
-        73: {
-            main: "Snow",
-            icon: "🌨️"
-        },
-
-        75: {
-            main: "Heavy Snow",
-            icon: "❄️"
-        },
-
-        80: {
-            main: "Rain Showers",
-            icon: "🌦️"
-        },
-
-        81: {
-            main: "Rain Showers",
-            icon: "🌦️"
-        },
-
-        82: {
-            main: "Heavy Rain Showers",
-            icon: "🌧️"
-        },
-
-        95: {
-            main: "Thunderstorm",
-            icon: "⛈️"
-        },
-
-        96: {
-            main: "Thunderstorm",
-            icon: "⛈️"
-        },
-
-        99: {
-            main: "Thunderstorm",
-            icon: "⛈️"
+    // Auto-refresh if the user revisits a stale tab the next day
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && currentCity) {
+            searchWeather(currentCity, false);
         }
-    };
-
-    return weatherCodes[code] || {
-        main: "Unknown",
-        icon: "🌤️"
-    };
-}
-
-
-/* =========================================================
-   DATE HELPERS
-   ========================================================= */
-
-function getCityToday(timezone) {
-
-    try {
-
-        const parts = new Intl.DateTimeFormat("en-CA", {
-            timeZone: timezone || "UTC",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit"
-        }).formatToParts(new Date());
-
-        const year =
-            parts.find(p => p.type === "year").value;
-
-        const month =
-            parts.find(p => p.type === "month").value;
-
-        const day =
-            parts.find(p => p.type === "day").value;
-
-        return `${year}-${month}-${day}`;
-
-    } catch (error) {
-
-        return new Date()
-            .toISOString()
-            .split("T")[0];
-    }
-}
-
-
-function getDayName(dateString) {
-
-    const date = new Date(`${dateString}T12:00:00`);
-
-    return date.toLocaleDateString("en-US", {
-        weekday: "short"
     });
-}
 
+    const savedCity = localStorage.getItem("lastCity");
+    if (savedCity) {
+        if (searchInput) searchInput.value = savedCity;
+        searchWeather(savedCity);
+    } else {
+        searchWeather("Pune");
+    }
+});
 
 /* =========================================================
-   SEARCH WEATHER
+   SEARCH SETUP
    ========================================================= */
 
-async function searchWeather() {
+function setupSearch() {
+    const executeSearch = () => {
+        const city = searchInput ? searchInput.value.trim() : "";
+        if (!city) {
+            alert("Please enter a city name.");
+            return;
+        }
+        searchWeather(city);
+    };
 
-    const city = cityInput.value.trim();
-
-    if (!city) {
-
-        alert("Please enter a city name.");
-
-        return;
+    if (searchButton) {
+        searchButton.addEventListener("click", executeSearch);
     }
 
+    if (searchInput) {
+        searchInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                executeSearch();
+            }
+        });
+    }
+}
+
+/* =========================================================
+   MAIN WEATHER FUNCTION
+   ========================================================= */
+
+async function searchWeather(city, showLoader = true) {
+    if (!city) return;
+
+    currentCity = city;
+    localStorage.setItem("lastCity", city);
+
+    if (showLoader) {
+        showLoading();
+    }
 
     try {
-
-        searchBtn.disabled = true;
-
-        searchBtn.textContent = "Loading...";
-
-
-        /*
-           IMPORTANT:
-
-           The API key is NOT here.
-
-           The request goes to your Vercel backend.
-        */
-
         const response = await fetch(
-            `/api/weather?city=${encodeURIComponent(city)}`
+            `${API_ENDPOINT}?city=${encodeURIComponent(city)}`
         );
 
-
         if (!response.ok) {
-
-            let errorMessage = "Weather request failed.";
-
+            let errorMessage = "Unable to fetch weather.";
             try {
-
                 const errorData = await response.json();
-
                 if (errorData.error) {
                     errorMessage = errorData.error;
                 }
-
-            } catch (error) {
-                // Ignore JSON parsing error
+            } catch (_) {
+                // Response was not JSON
             }
-
             throw new Error(errorMessage);
         }
 
-
         const data = await response.json();
 
-
-        console.log("Weather data:", data);
-
-
-        weatherData = data;
-
-
-        /* Display all weather information */
+        if (!data || (!data.current && !data.daily)) {
+            throw new Error("Invalid or empty weather data received.");
+        }
 
         displayCurrentWeather(data);
-
         displayFiveDayForecast(data);
-
         displayHourlyForecast(data);
-
-        displayExtraDetails(data);
-
-
-        /* Save search */
-
+        displayAdditionalDetails(data);
         saveRecentSearch(city);
 
-        displayRecentSearches();
-
-
     } catch (error) {
-
-        console.error("Weather error:", error);
-
-        alert(
-            error.message ||
-            "Unable to fetch weather data."
-        );
-
-    } finally {
-
-        searchBtn.disabled = false;
-
-        searchBtn.textContent = "Search";
+        console.error("Weather request failed:", error);
+        showError(error.message || "Unable to fetch weather.");
     }
 }
-
 
 /* =========================================================
    CURRENT WEATHER
    ========================================================= */
 
 function displayCurrentWeather(data) {
+    const current = data.current || {};
+    const location = data.location || {};
 
-    if (!data) {
-        return;
+    let cityName = location.name || data.city || currentCity;
+
+    if (currentCityElement) {
+        currentCityElement.textContent = cityName;
     }
 
-
-    /* City name */
-
-    if (cityName) {
-
-        cityName.textContent =
-            data.city ||
-            data.name ||
-            cityInput.value;
+    if (currentTemperature) {
+        currentTemperature.textContent = current.temperature_2m !== undefined 
+            ? `${Math.round(current.temperature_2m)}°C` 
+            : "--°C";
     }
 
+    const weather = convertWeatherCode(current.weather_code);
 
-    /* Current temperature */
-
-    if (
-        temperature &&
-        data.current &&
-        data.current.temperature_2m !== undefined
-    ) {
-
-        temperature.textContent =
-            `${Math.round(data.current.temperature_2m)}°C`;
+    if (currentCondition) {
+        currentCondition.textContent = weather.main;
     }
 
-
-    /* Weather condition */
-
-    if (
-        weatherCondition &&
-        data.current &&
-        data.current.weather_code !== undefined
-    ) {
-
-        const weather =
-            convertWeatherCode(
-                data.current.weather_code
-            );
-
-        weatherCondition.textContent =
-            weather.main;
+    const mainIcon = document.getElementById("weatherIcon");
+    if (mainIcon) {
+        mainIcon.textContent = weather.icon;
     }
 
-
-    /* Humidity */
-
-    if (
-        humidity &&
-        data.current &&
-        data.current.relative_humidity_2m !== undefined
-    ) {
-
-        humidity.textContent =
-            `${Math.round(
-                data.current.relative_humidity_2m
-            )}%`;
+    if (humidityElement) {
+        humidityElement.textContent = current.relative_humidity_2m !== undefined 
+            ? `${Math.round(current.relative_humidity_2m)}%` 
+            : "--%";
     }
 
-
-    /* Wind */
-
-    if (
-        windSpeed &&
-        data.current &&
-        data.current.wind_speed_10m !== undefined
-    ) {
-
-        windSpeed.textContent =
-            `${Math.round(
-                data.current.wind_speed_10m
-            )} km/h`;
+    if (windElement) {
+        windElement.textContent = current.wind_speed_10m !== undefined 
+            ? `${Math.round(current.wind_speed_10m)} km/h` 
+            : "-- km/h";
     }
 
-
-    /* Feels like */
-
-    if (
-        feelsLike &&
-        data.current &&
-        data.current.apparent_temperature !== undefined
-    ) {
-
-        feelsLike.textContent =
-            `${Math.round(
-                data.current.apparent_temperature
-            )}°C`;
+    if (feelsLikeElement) {
+        feelsLikeElement.textContent = current.apparent_temperature !== undefined 
+            ? `${Math.round(current.apparent_temperature)}°C` 
+            : "--°C";
     }
 }
 
-
 /* =========================================================
-   5 FUTURE DAYS
+   5-DAY FUTURE FORECAST (ROBUST DATE FILTERING)
    ========================================================= */
 
 function displayFiveDayForecast(data) {
-
-    if (!forecastContainer) {
-
-        console.error(
-            "forecastContainer not found in HTML."
-        );
-
-        return;
-    }
-
-
+    if (!forecastContainer) return;
     forecastContainer.innerHTML = "";
 
-
-    /*
-       IMPORTANT FIX
-
-       We DO NOT simply use:
-
-       daily[1]
-       daily[2]
-       daily[3]
-       daily[4]
-       daily[5]
-
-       Instead we compare the actual date
-       returned by the API with TODAY.
-
-       This prevents TODAY from appearing.
-    */
-
-
-    if (
-        !data.daily ||
-        !data.daily.time
-    ) {
-
-        console.error(
-            "Daily forecast data not found."
-        );
-
+    if (!data.daily || !Array.isArray(data.daily.time)) {
+        showForecastError();
         return;
     }
 
-
-    /* Get TODAY in the forecast city's timezone */
-
-    const today =
-        getCityToday(data.timezone);
-
-
-    console.log(
-        "City timezone:",
-        data.timezone
-    );
-
-    console.log(
-        "Today in city:",
-        today
-    );
-
+    const daily = data.daily;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const futureDays = [];
 
+    // Filter by calendar day to avoid timezone desync or index assumption bugs
+    for (let i = 0; i < daily.time.length; i++) {
+        const itemDate = parseLocalDate(daily.time[i]);
+        itemDate.setHours(0, 0, 0, 0);
 
-    /*
-       Go through every date returned
-       by the API.
-    */
-
-    for (
-        let i = 0;
-        i < data.daily.time.length;
-        i++
-    ) {
-
-        const forecastDate =
-            data.daily.time[i];
-
-
-        /*
-           THIS IS THE IMPORTANT PART.
-
-           If:
-
-           forecastDate <= today
-
-           we skip it.
-
-           Therefore TODAY can never
-           appear in the forecast.
-        */
-
-        if (forecastDate <= today) {
-
-            console.log(
-                "Skipping:",
-                forecastDate
-            );
-
-            continue;
+        // Accept only future days (strictly after today)
+        if (itemDate > today) {
+            futureDays.push({
+                date: daily.time[i],
+                max: daily.temperature_2m_max ? daily.temperature_2m_max[i] : null,
+                min: daily.temperature_2m_min ? daily.temperature_2m_min[i] : null,
+                weatherCode: daily.weather_code ? daily.weather_code[i] : null
+            });
         }
 
-
-        futureDays.push({
-
-            date: forecastDate,
-
-            min:
-                data.daily.temperature_2m_min[i],
-
-            max:
-                data.daily.temperature_2m_max[i],
-
-            weatherCode:
-                data.daily.weather_code[i]
-
-        });
-
-
-        /*
-           Stop after exactly
-           5 future days.
-        */
-
-        if (futureDays.length === 5) {
-
-            break;
-        }
+        if (futureDays.length === 5) break;
     }
 
+    if (futureDays.length === 0) {
+        showForecastError();
+        return;
+    }
 
-    console.log(
-        "5 FUTURE DAYS:",
-        futureDays
-    );
+    futureDays.forEach((day) => {
+        const date = parseLocalDate(day.date);
+        const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+        const weather = convertWeatherCode(day.weatherCode);
 
-
-    /* Display the five days */
-
-    futureDays.forEach(day => {
-
-        const weather =
-            convertWeatherCode(
-                day.weatherCode
-            );
-
-
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "forecast-card";
-
-
+        const card = document.createElement("div");
+        card.className = "forecast-card";
         card.innerHTML = `
-
-            <h3>
-                ${getDayName(day.date)}
-            </h3>
-
-            <div class="forecast-icon">
-                ${weather.icon}
-            </div>
-
-            <div class="forecast-max">
-                ${Math.round(day.max)}°C
-            </div>
-
-            <div class="forecast-min">
-                Min ${Math.round(day.min)}°C
-            </div>
-
+            <h3>${dayName}</h3>
+            <div class="forecast-icon">${weather.icon}</div>
+            <div class="forecast-max">${day.max !== null ? Math.round(day.max) : "--"}°C</div>
+            <div class="forecast-min">Min ${day.min !== null ? Math.round(day.min) : "--"}°C</div>
         `;
 
-
         forecastContainer.appendChild(card);
-
     });
-
-
-    /*
-       If less than 5 future days are
-       available, show a console message.
-    */
-
-    if (futureDays.length < 5) {
-
-        console.warn(
-            "The API returned only " +
-            futureDays.length +
-            " future days."
-        );
-    }
 }
-
 
 /* =========================================================
    HOURLY FORECAST
    ========================================================= */
 
 function displayHourlyForecast(data) {
-
-    if (!hourlyContainer) {
-        return;
-    }
-
-
+    if (!hourlyContainer) return;
     hourlyContainer.innerHTML = "";
 
-
-    if (
-        !data.hourly ||
-        !data.hourly.time
-    ) {
-
+    if (!data.hourly || !Array.isArray(data.hourly.time)) {
         return;
     }
 
+    const hourly = data.hourly;
+    const now = new Date();
 
-    const timezone =
-        data.timezone || "UTC";
+    // Locate the current hour index
+    let startIndex = hourly.time.findIndex(timeStr => new Date(timeStr) >= now);
+    if (startIndex === -1) startIndex = 0;
 
+    const numberOfHours = 8;
+    const endIndex = Math.min(startIndex + numberOfHours, hourly.time.length);
 
-    const now =
-        new Date();
+    for (let i = startIndex; i < endIndex; i++) {
+        const time = new Date(hourly.time[i]);
+        const temperature = hourly.temperature_2m ? hourly.temperature_2m[i] : null;
+        const weather = convertWeatherCode(hourly.weather_code ? hourly.weather_code[i] : null);
 
+        const timeText = time.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
 
-    /*
-       Show approximately the next
-       8 available hours.
-    */
-
-    let shown = 0;
-
-
-    for (
-        let i = 0;
-        i < data.hourly.time.length &&
-        shown < 8;
-        i++
-    ) {
-
-        const timeString =
-            data.hourly.time[i];
-
-
-        const forecastTime =
-            new Date(timeString);
-
-
-        /*
-           Skip forecast times that
-           have already passed.
-        */
-
-        if (forecastTime < now) {
-            continue;
-        }
-
-
-        const temp =
-            data.hourly.temperature_2m[i];
-
-
-        const code =
-            data.hourly.weather_code[i];
-
-
-        const weather =
-            convertWeatherCode(code);
-
-
-        const time =
-            new Date(timeString)
-                .toLocaleTimeString(
-                    "en-US",
-                    {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                        timeZone: timezone
-                    }
-                );
-
-
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "hourly-card";
-
-
+        const card = document.createElement("div");
+        card.className = "hourly-card";
         card.innerHTML = `
-
-            <h3>${time}</h3>
-
-            <div class="hourly-icon">
-                ${weather.icon}
-            </div>
-
-            <div class="hourly-temp">
-                ${Math.round(temp)}°C
-            </div>
-
-            <div class="hourly-condition">
-                ${weather.main}
-            </div>
-
+            <h3>${timeText}</h3>
+            <div class="hourly-icon">${weather.icon}</div>
+            <div class="hourly-temperature">${temperature !== null ? Math.round(temperature) : "--"}°C</div>
+            <div class="hourly-condition">${weather.main}</div>
         `;
 
-
         hourlyContainer.appendChild(card);
-
-
-        shown++;
     }
 }
 
-
 /* =========================================================
-   EXTRA WEATHER DETAILS
+   ADDITIONAL DETAILS
    ========================================================= */
 
-function displayExtraDetails(data) {
+function displayAdditionalDetails(data) {
+    const current = data.current || {};
+    const daily = data.daily || {};
 
-    if (!data) {
-        return;
+    if (sunriseElement && daily.sunrise && daily.sunrise[0]) {
+        sunriseElement.textContent = formatTime(daily.sunrise[0]);
     }
 
-
-    /* Sunrise */
-
-    if (
-        sunrise &&
-        data.daily &&
-        data.daily.sunrise &&
-        data.daily.sunrise[0]
-    ) {
-
-        sunrise.textContent =
-            formatTime(
-                data.daily.sunrise[0],
-                data.timezone
-            );
+    if (sunsetElement && daily.sunset && daily.sunset[0]) {
+        sunsetElement.textContent = formatTime(daily.sunset[0]);
     }
 
+    if (visibilityElement) {
+        const visMeters = current.visibility !== undefined 
+            ? current.visibility 
+            : (data.hourly && data.hourly.visibility ? data.hourly.visibility[0] : null);
 
-    /* Sunset */
-
-    if (
-        sunset &&
-        data.daily &&
-        data.daily.sunset &&
-        data.daily.sunset[0]
-    ) {
-
-        sunset.textContent =
-            formatTime(
-                data.daily.sunset[0],
-                data.timezone
-            );
+        visibilityElement.textContent = visMeters !== null 
+            ? `${(visMeters / 1000).toFixed(1)} km` 
+            : "-- km";
     }
 
-
-    /* Visibility */
-
-    if (
-        visibility &&
-        data.current &&
-        data.current.visibility !== undefined
-    ) {
-
-        visibility.textContent =
-            `${(
-                data.current.visibility / 1000
-            ).toFixed(1)} km`;
+    if (pressureElement) {
+        pressureElement.textContent = current.surface_pressure !== undefined 
+            ? `${Math.round(current.surface_pressure)} hPa` 
+            : "-- hPa";
     }
 
-
-    /*
-       Pressure
-
-       Open-Meteo normally gives
-       surface_pressure.
-    */
-
-    if (
-        pressure &&
-        data.current &&
-        data.current.surface_pressure !== undefined
-    ) {
-
-        pressure.textContent =
-            `${Math.round(
-                data.current.surface_pressure
-            )} hPa`;
-    }
-
-
-    /* Cloudiness */
-
-    if (
-        cloudiness &&
-        data.current &&
-        data.current.cloud_cover !== undefined
-    ) {
-
-        cloudiness.textContent =
-            `${Math.round(
-                data.current.cloud_cover
-            )}%`;
+    if (cloudinessElement) {
+        cloudinessElement.textContent = current.cloud_cover !== undefined 
+            ? `${Math.round(current.cloud_cover)}%` 
+            : "--%";
     }
 }
 
-
 /* =========================================================
-   TIME FORMAT
+   WEATHER CODE CONVERSION
    ========================================================= */
 
-function formatTime(timeString, timezone) {
-
-    if (!timeString) {
-        return "--";
+function convertWeatherCode(code) {
+    if (code === undefined || code === null) {
+        return { icon: "🌤️", main: "Weather" };
     }
 
-
-    try {
-
-        return new Date(timeString)
-            .toLocaleTimeString(
-                "en-US",
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                    timeZone:
-                        timezone || "UTC"
-                }
-            );
-
-    } catch (error) {
-
-        return timeString;
+    switch (code) {
+        case 0:
+            return { icon: "☀️", main: "Clear Sky" };
+        case 1:
+            return { icon: "🌤️", main: "Mainly Clear" };
+        case 2:
+            return { icon: "⛅", main: "Partly Cloudy" };
+        case 3:
+            return { icon: "☁️", main: "Overcast" };
+        case 45:
+        case 48:
+            return { icon: "🌫️", main: "Fog" };
+        case 51:
+        case 53:
+        case 55:
+        case 56:
+        case 57:
+            return { icon: "🌦️", main: "Drizzle" };
+        case 61:
+        case 63:
+        case 65:
+        case 66:
+        case 67:
+            return { icon: "🌧️", main: "Rain" };
+        case 71:
+        case 73:
+        case 75:
+        case 77:
+            return { icon: "❄️", main: "Snow" };
+        case 80:
+        case 81:
+        case 82:
+            return { icon: "🌦️", main: "Rain Showers" };
+        case 85:
+        case 86:
+            return { icon: "🌨️", main: "Snow Showers" };
+        case 95:
+        case 96:
+        case 99:
+            return { icon: "⛈️", main: "Thunderstorm" };
+        default:
+            return { icon: "🌤️", main: "Variable" };
     }
 }
 
-
 /* =========================================================
-   RECENT SEARCHES
+   DATE & TIME HELPERS
    ========================================================= */
 
-function saveRecentSearch(city) {
-
-    let searches =
-        JSON.parse(
-            localStorage.getItem(
-                "recentSearches"
-            )
-        ) || [];
-
-
-    /* Remove duplicate */
-
-    searches =
-        searches.filter(
-            item =>
-                item.toLowerCase() !==
-                city.toLowerCase()
-        );
-
-
-    /* Add newest search first */
-
-    searches.unshift(city);
-
-
-    /* Keep only 5 */
-
-    searches =
-        searches.slice(0, 5);
-
-
-    localStorage.setItem(
-        "recentSearches",
-        JSON.stringify(searches)
-    );
+function parseLocalDate(dateString) {
+    if (!dateString) return new Date();
+    const parts = dateString.split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
 }
 
+function formatTime(dateTimeString) {
+    if (!dateTimeString) return "--";
+    const date = new Date(dateTimeString);
+    if (Number.isNaN(date.getTime())) return "--";
 
-/* =========================================================
-   DISPLAY RECENT SEARCHES
-   ========================================================= */
-
-function displayRecentSearches() {
-
-    if (!recentSearchesContainer) {
-        return;
-    }
-
-
-    recentSearchesContainer.innerHTML = "";
-
-
-    const searches =
-        JSON.parse(
-            localStorage.getItem(
-                "recentSearches"
-            )
-        ) || [];
-
-
-    searches.forEach(city => {
-
-        const button =
-            document.createElement("button");
-
-
-        button.className =
-            "recent-search";
-
-
-        button.textContent =
-            city;
-
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                cityInput.value =
-                    city;
-
-                searchWeather();
-
-            }
-        );
-
-
-        recentSearchesContainer
-            .appendChild(button);
-
+    return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit"
     });
 }
 
+function scheduleMidnightRefresh() {
+    if (midnightTimer) clearTimeout(midnightTimer);
 
-/* =========================================================
-   CLEAR RECENT SEARCHES
-   ========================================================= */
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 10);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
 
-if (clearSearchesBtn) {
-
-    clearSearchesBtn.addEventListener(
-        "click",
-        () => {
-
-            localStorage.removeItem(
-                "recentSearches"
-            );
-
-            displayRecentSearches();
-
+    midnightTimer = setTimeout(() => {
+        if (currentCity) {
+            searchWeather(currentCity, false);
         }
-    );
+        scheduleMidnightRefresh();
+    }, msUntilMidnight);
 }
 
-
 /* =========================================================
-   DARK MODE
+   RECENT SEARCHES & STORAGE
    ========================================================= */
 
-if (darkModeBtn) {
+function saveRecentSearch(city) {
+    let searches = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+    searches = searches.filter(item => item.toLowerCase() !== city.toLowerCase());
+    searches.unshift(city);
+    searches = searches.slice(0, 5);
 
-    darkModeBtn.addEventListener(
-        "click",
-        () => {
-
-            document.body.classList.toggle(
-                "dark-mode"
-            );
-
-
-            const isDark =
-                document.body.classList.contains(
-                    "dark-mode"
-                );
-
-
-            localStorage.setItem(
-                "darkMode",
-                isDark
-            );
-
-        }
-    );
+    localStorage.setItem("recentSearches", JSON.stringify(searches));
+    loadRecentSearches();
 }
 
+function loadRecentSearches() {
+    if (!recentSearchesContainer) return;
 
-/* =========================================================
-   LOAD DARK MODE
-   ========================================================= */
+    const searches = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+    recentSearchesContainer.innerHTML = "";
 
-const savedDarkMode =
-    localStorage.getItem("darkMode");
-
-
-if (savedDarkMode === "true") {
-
-    document.body.classList.add(
-        "dark-mode"
-    );
+    searches.forEach(city => {
+        const button = document.createElement("button");
+        button.className = "recent-search";
+        button.textContent = city;
+        button.addEventListener("click", () => {
+            if (searchInput) searchInput.value = city;
+            searchWeather(city);
+        });
+        recentSearchesContainer.appendChild(button);
+    });
 }
 
-
-/* =========================================================
-   SEARCH BUTTON
-   ========================================================= */
-
-if (searchBtn) {
-
-    searchBtn.addEventListener(
-        "click",
-        searchWeather
-    );
+if (clearSearchesButton) {
+    clearSearchesButton.addEventListener("click", () => {
+        localStorage.removeItem("recentSearches");
+        loadRecentSearches();
+    });
 }
 
-
 /* =========================================================
-   ENTER KEY SEARCH
+   THEME TOGGLE
    ========================================================= */
 
-if (cityInput) {
+function setupDarkMode() {
+    if (!darkModeButton) return;
 
-    cityInput.addEventListener(
-        "keydown",
-        event => {
+    const savedMode = localStorage.getItem("darkMode");
+    if (savedMode === "true") {
+        document.body.classList.add("dark-mode");
+    }
 
-            if (event.key === "Enter") {
-
-                searchWeather();
-
-            }
-
-        }
-    );
+    darkModeButton.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        const isDark = document.body.classList.contains("dark-mode");
+        localStorage.setItem("darkMode", isDark.toString());
+    });
 }
 
-
 /* =========================================================
-   INITIAL RECENT SEARCHES
+   UI FEEDBACK (LOADING / ERROR)
    ========================================================= */
 
-displayRecentSearches();
+function showLoading() {
+    if (currentTemperature) currentTemperature.textContent = "--°C";
+    if (currentCondition) currentCondition.textContent = "Loading...";
+}
 
+function showError(message) {
+    if (currentCondition) currentCondition.textContent = "Error";
+    if (currentTemperature) currentTemperature.textContent = "--°C";
+    if (forecastContainer) {
+        forecastContainer.innerHTML = `
+            <p style="color:white; text-align:center; width:100%; font-size:16px;">
+                ${message}
+            </p>
+        `;
+    }
+}
 
-/* =========================================================
-   OPTIONAL DEFAULT CITY
-   ========================================================= */
-
-if (cityInput && cityInput.value.trim()) {
-
-    // Uncomment this if you want
-    // weather to load automatically.
-
-    // searchWeather();
+function showForecastError() {
+    if (!forecastContainer) return;
+    forecastContainer.innerHTML = `
+        <p style="color:white; text-align:center; width:100%; font-size:16px;">
+            Unable to load 5-day forecast.
+        </p>
+    `;
 }

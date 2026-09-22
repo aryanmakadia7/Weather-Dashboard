@@ -1,110 +1,77 @@
-function displayFiveDayForecast(data) {
+export default async function handler(req, res) {
+    try {
+        const city = req.query.city;
 
-    if (!forecastContainer) {
-        console.error("forecastContainer not found.");
-        return;
-    }
-
-    forecastContainer.innerHTML = "";
-
-    if (
-        !data.daily ||
-        !Array.isArray(data.daily.time)
-    ) {
-        showForecastError();
-        return;
-    }
-
-    const daily = data.daily;
-
-    /*
-        IMPORTANT:
-
-        daily[0] = TODAY
-        daily[1] = TOMORROW
-        daily[2] = FUTURE DAY 2
-        daily[3] = FUTURE DAY 3
-        daily[4] = FUTURE DAY 4
-        daily[5] = FUTURE DAY 5
-
-        Therefore we ALWAYS skip index 0
-        and display indexes 1 to 5.
-    */
-
-    for (let i = 1; i <= 5; i++) {
-
-        if (
-            !daily.time[i] ||
-            daily.temperature_2m_max[i] === undefined ||
-            daily.temperature_2m_min[i] === undefined ||
-            daily.weather_code[i] === undefined
-        ) {
-            console.error(
-                "Missing forecast data for index:",
-                i
-            );
-            continue;
+        if (!city || typeof city !== "string" || !city.trim()) {
+            return res.status(400).json({
+                error: "City name is required"
+            });
         }
 
-        /*
-            Parse YYYY-MM-DD manually.
+        // Get coordinates
+        const geoURL =
+            `https://geocoding-api.open-meteo.com/v1/search` +
+            `?name=${encodeURIComponent(city.trim())}` +
+            `&count=1` +
+            `&language=en` +
+            `&format=json`;
 
-            This prevents timezone problems where
-            a date can accidentally become the
-            previous day.
-        */
+        const geoResponse = await fetch(geoURL);
+        const geoData = await geoResponse.json();
 
-        const parts =
-            daily.time[i].split("-");
+        if (
+            !geoResponse.ok ||
+            !geoData.results ||
+            geoData.results.length === 0
+        ) {
+            return res.status(404).json({
+                error: `City "${city}" not found`
+            });
+        }
 
-        const date = new Date(
-            Number(parts[0]),
-            Number(parts[1]) - 1,
-            Number(parts[2]),
-            12,
-            0,
-            0
-        );
+        const location = geoData.results[0];
 
-        const dayName =
-            date.toLocaleDateString(
-                "en-US",
-                {
-                    weekday: "long"
-                }
-            );
+        const latitude = location.latitude;
+        const longitude = location.longitude;
+        const name = location.name;
+        const country = location.country || "";
 
-        const weather =
-            convertWeatherCode(
-                daily.weather_code[i]
-            );
+        // Get weather
+        const weatherURL =
+            `https://api.open-meteo.com/v1/forecast` +
+            `?latitude=${latitude}` +
+            `&longitude=${longitude}` +
+            `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,surface_pressure,visibility,wind_speed_10m` +
+            `&hourly=temperature_2m,weather_code,visibility` +
+            `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset` +
+            `&timezone=auto` +
+            `&forecast_days=7`;
 
-        const card =
-            document.createElement("div");
+        const weatherResponse = await fetch(weatherURL);
+        const weatherData = await weatherResponse.json();
 
-        card.className =
-            "forecast-card";
+        if (!weatherResponse.ok) {
+            return res.status(502).json({
+                error: "Weather provider request failed"
+            });
+        }
 
-        card.innerHTML = `
-            <h3>${dayName}</h3>
+        return res.status(200).json({
+            city: name,
+            country: country,
+            latitude: latitude,
+            longitude: longitude,
+            timezone: weatherData.timezone,
+            current: weatherData.current,
+            hourly: weatherData.hourly,
+            daily: weatherData.daily
+        });
 
-            <div class="forecast-icon">
-                ${weather.icon}
-            </div>
+    } catch (error) {
+        console.error("Weather API Error:", error);
 
-            <div class="forecast-max">
-                ${Math.round(
-                    daily.temperature_2m_max[i]
-                )}°C
-            </div>
-
-            <div class="forecast-min">
-                Min ${Math.round(
-                    daily.temperature_2m_min[i]
-                )}°C
-            </div>
-        `;
-
-        forecastContainer.appendChild(card);
+        return res.status(500).json({
+            error: error.message || "Internal server error"
+        });
     }
 }

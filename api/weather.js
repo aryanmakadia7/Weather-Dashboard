@@ -1,79 +1,110 @@
-export default async function handler(req, res) {
-    try {
-        /* ================================
-           GET & VALIDATE CITY
-        ================================= */
-        const city = req.query.city;
+function displayFiveDayForecast(data) {
 
-        if (!city || typeof city !== "string" || !city.trim()) {
-            return res.status(400).json({
-                error: "City name is required"
-            });
+    if (!forecastContainer) {
+        console.error("forecastContainer not found.");
+        return;
+    }
+
+    forecastContainer.innerHTML = "";
+
+    if (
+        !data.daily ||
+        !Array.isArray(data.daily.time)
+    ) {
+        showForecastError();
+        return;
+    }
+
+    const daily = data.daily;
+
+    /*
+        IMPORTANT:
+
+        daily[0] = TODAY
+        daily[1] = TOMORROW
+        daily[2] = FUTURE DAY 2
+        daily[3] = FUTURE DAY 3
+        daily[4] = FUTURE DAY 4
+        daily[5] = FUTURE DAY 5
+
+        Therefore we ALWAYS skip index 0
+        and display indexes 1 to 5.
+    */
+
+    for (let i = 1; i <= 5; i++) {
+
+        if (
+            !daily.time[i] ||
+            daily.temperature_2m_max[i] === undefined ||
+            daily.temperature_2m_min[i] === undefined ||
+            daily.weather_code[i] === undefined
+        ) {
+            console.error(
+                "Missing forecast data for index:",
+                i
+            );
+            continue;
         }
 
-        /* ================================
-           GEOCODING (CITY TO COORDS)
-        ================================= */
-        const geoURL = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city.trim())}&count=1&language=en&format=json`;
-        
-        const geoResponse = await fetch(geoURL);
-        const geoData = await geoResponse.json();
+        /*
+            Parse YYYY-MM-DD manually.
 
-        if (!geoResponse.ok || !geoData.results || geoData.results.length === 0) {
-            return res.status(404).json({
-                error: `City "${city}" not found`
-            });
-        }
+            This prevents timezone problems where
+            a date can accidentally become the
+            previous day.
+        */
 
-        const location = geoData.results[0];
-        const { latitude, longitude, name, country } = location;
+        const parts =
+            daily.time[i].split("-");
 
-        /* ================================
-           OPEN-METEO WEATHER FORECAST
-        ================================= */
-        // Note: forecast_days is set to 7 to guarantee 5 future days
-        // Note: hourly includes visibility as a fallback
-        const weatherURL =
-            `https://api.open-meteo.com/v1/forecast` +
-            `?latitude=${latitude}` +
-            `&longitude=${longitude}` +
-            `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,surface_pressure,visibility,wind_speed_10m` +
-            `&hourly=temperature_2m,weather_code,visibility` +
-            `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset` +
-            `&timezone=auto` +
-            `&forecast_days=7`;
+        const date = new Date(
+            Number(parts[0]),
+            Number(parts[1]) - 1,
+            Number(parts[2]),
+            12,
+            0,
+            0
+        );
 
-        const weatherResponse = await fetch(weatherURL);
-        const weatherData = await weatherResponse.json();
+        const dayName =
+            date.toLocaleDateString(
+                "en-US",
+                {
+                    weekday: "long"
+                }
+            );
 
-        if (!weatherResponse.ok) {
-            return res.status(502).json({
-                error: "Failed to fetch weather data from upstream provider"
-            });
-        }
+        const weather =
+            convertWeatherCode(
+                daily.weather_code[i]
+            );
 
-        /* ================================
-           CACHE & RESPONSE
-        ================================= */
-        // Cache at edge for 10 minutes (600s), revalidate in background up to 5 minutes (300s)
-        res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate=300");
+        const card =
+            document.createElement("div");
 
-        return res.status(200).json({
-            city: name,
-            country: country || "",
-            latitude,
-            longitude,
-            timezone: weatherData.timezone,
-            current: weatherData.current,
-            hourly: weatherData.hourly,
-            daily: weatherData.daily
-        });
+        card.className =
+            "forecast-card";
 
-    } catch (error) {
-        console.error("Weather API Error:", error);
+        card.innerHTML = `
+            <h3>${dayName}</h3>
 
-        return res.status(500).json({
-            error: "An internal error occurred while processing the weather request."
-        });
+            <div class="forecast-icon">
+                ${weather.icon}
+            </div>
+
+            <div class="forecast-max">
+                ${Math.round(
+                    daily.temperature_2m_max[i]
+                )}°C
+            </div>
+
+            <div class="forecast-min">
+                Min ${Math.round(
+                    daily.temperature_2m_min[i]
+                )}°C
+            </div>
+        `;
+
+        forecastContainer.appendChild(card);
     }
 }

@@ -1,0 +1,924 @@
+/* ============================= */
+/* BASIC RESET */
+/* ============================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* ============================= */
+/* BODY */
+/* ============================= */
+
+body {
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    min-height: 100vh;
+
+    background:
+        linear-gradient(
+            135deg,
+            #74ebd5,
+            #ACB6E5
+        );
+
+    color: #1e293b;
+
+    padding: 35px 20px;
+
+    transition:
+        background 0.3s ease,
+        color 0.3s ease;
+}
+
+
+/* ============================= */
+/* MAIN CONTAINER */
+/* ============================= */
+
+.container {
+
+    width: 100%;
+
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+}
+
+
+/* ============================= */
+/* HEADER */
+/* ============================= */
+
+.header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 30px;
+
+}
+
+
+.header h1 {
+
+    color: white;
+
+    font-size: 48px;
+
+    text-align: center;
+
+}
+
+
+/* ============================= */
+/* DARK MODE BUTTON */
+/* ============================= */
+
+.dark-mode-btn {
+
+    border: none;
+
+    background: rgba(255, 255, 255, 0.9);
+
+    color: #1e293b;
+
+    padding: 12px 18px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+
+}
+
+
+.dark-mode-btn:hover {
+
+    transform: translateY(-2px);
+
+}
+
+
+/* ============================= */
+/* SEARCH */
+/* ============================= */
+
+.search-box {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 14px;
+
+    margin-bottom: 25px;
+
+}
+
+
+.search-box input {
+
+    width: 520px;
+
+    padding: 17px 20px;
+
+    border: none;
+
+    outline: none;
+
+    border-radius: 14px;
+
+    font-size: 18px;
+
+}
+
+
+.search-box button {
+
+    padding: 17px 30px;
+
+    border: none;
+
+    border-radius: 14px;
+
+    background: #2563eb;
+
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+
+}
+
+
+.search-box button:hover {
+
+    background: #1d4ed8;
+
+    transform: translateY(-2px);
+
+}
+
+
+/* ============================= */
+/* STATUS */
+/* ============================= */
+
+.status-message {
+
+    text-align: center;
+
+    color: white;
+
+    font-size: 16px;
+
+    min-height: 22px;
+
+    margin-bottom: 10px;
+
+}
+
+
+/* ============================= */
+/* CURRENT WEATHER CARD */
+/* ============================= */
+
+.weather-card {
+
+    background: rgba(255, 255, 255, 0.92);
+
+    border-radius: 28px;
+
+    padding: 40px;
+
+    text-align: center;
+
+    box-shadow:
+        0 15px 35px rgba(0, 0, 0, 0.12);
+
+    margin-bottom: 40px;
+
+}
+
+
+.weather-card h2 {
+
+    font-size: 38px;
+
+    margin-bottom: 10px;
+
+}
+
+
+.main-weather-icon {
+
+    font-size: 65px;
+
+    margin: 5px 0;
+
+}
+
+
+.temperature {
+
+    font-size: 78px;
+
+    font-weight: bold;
+
+    color: #2563eb;
+
+    margin: 5px 0;
+
+}
+
+
+.weather-condition {
+
+    font-size: 24px;
+
+    color: #64748b;
+
+    text-transform: capitalize;
+
+    margin-bottom: 30px;
+
+}
+
+
+/* ============================= */
+/* MAIN STATS */
+/* ============================= */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 20px;
+
+}
+
+
+.stat-card {
+
+    background: #f1f5f9;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+}
+
+
+.stat-icon {
+
+    font-size: 40px;
+
+    margin-bottom: 10px;
+
+}
+
+
+.stat-card h3 {
+
+    color: #64748b;
+
+    font-size: 20px;
+
+    font-weight: normal;
+
+    margin-bottom: 8px;
+
+}
+
+
+.stat-card p {
+
+    font-size: 26px;
+
+    font-weight: bold;
+
+}
+
+
+/* ============================= */
+/* ADDITIONAL DETAILS */
+/* ============================= */
+
+.details-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 15px;
+
+    margin-top: 20px;
+
+}
+
+
+.detail-card {
+
+    background: #f1f5f9;
+
+    border-radius: 18px;
+
+    padding: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+}
+
+
+.detail-icon {
+
+    font-size: 28px;
+
+}
+
+
+.detail-card h3 {
+
+    color: #64748b;
+
+    font-size: 14px;
+
+    font-weight: normal;
+
+    margin-bottom: 5px;
+
+}
+
+
+.detail-card p {
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+}
+
+
+/* ============================= */
+/* SECTIONS */
+/* ============================= */
+
+.section {
+
+    margin-bottom: 40px;
+
+}
+
+
+.section-title {
+
+    color: white;
+
+    font-size: 30px;
+
+    text-align: center;
+
+    margin-bottom: 22px;
+
+}
+
+
+/* ============================= */
+/* 5 DAY FORECAST */
+/* ============================= */
+
+.forecast-container {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 15px;
+
+}
+
+
+.forecast-card {
+
+    background: rgba(255, 255, 255, 0.94);
+
+    border-radius: 20px;
+
+    padding: 22px 12px;
+
+    text-align: center;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.08);
+
+    transition: 0.3s;
+
+}
+
+
+.forecast-card:hover {
+
+    transform: translateY(-5px);
+
+}
+
+
+.forecast-day {
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    margin-bottom: 15px;
+
+}
+
+
+.forecast-icon {
+
+    font-size: 42px;
+
+    margin-bottom: 12px;
+
+}
+
+
+.forecast-max {
+
+    color: #2563eb;
+
+    font-size: 23px;
+
+    font-weight: bold;
+
+}
+
+
+.forecast-min {
+
+    color: #64748b;
+
+    font-size: 17px;
+
+    margin-top: 5px;
+
+}
+
+
+/* ============================= */
+/* HOURLY FORECAST */
+/* ============================= */
+
+.hourly-container {
+
+    display: flex;
+
+    gap: 15px;
+
+    overflow-x: auto;
+
+    padding: 10px 5px 20px;
+
+    scrollbar-width: thin;
+
+}
+
+
+.hourly-card {
+
+    min-width: 130px;
+
+    background: rgba(255, 255, 255, 0.94);
+
+    border-radius: 18px;
+
+    padding: 18px 12px;
+
+    text-align: center;
+
+    flex-shrink: 0;
+
+}
+
+
+.hourly-time {
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    margin-bottom: 12px;
+
+}
+
+
+.hourly-icon {
+
+    font-size: 35px;
+
+    margin-bottom: 10px;
+
+}
+
+
+.hourly-temp {
+
+    color: #2563eb;
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+    margin-bottom: 8px;
+
+}
+
+
+.hourly-condition {
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    text-transform: capitalize;
+
+}
+
+
+/* ============================= */
+/* RECENT SEARCHES */
+/* ============================= */
+
+.recent-header {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 20px;
+
+}
+
+
+.recent-searches {
+
+    display: flex;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+}
+
+
+.recent-city {
+
+    background: rgba(255, 255, 255, 0.92);
+
+    border: none;
+
+    border-radius: 12px;
+
+    padding: 12px 18px;
+
+    font-size: 16px;
+
+    cursor: pointer;
+
+    color: #1e293b;
+
+    transition: 0.3s;
+
+}
+
+
+.recent-city:hover {
+
+    transform: translateY(-2px);
+
+    background: white;
+
+}
+
+
+.clear-btn {
+
+    border: none;
+
+    background: #ef4444;
+
+    color: white;
+
+    padding: 8px 14px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+}
+
+
+.clear-btn:hover {
+
+    background: #dc2626;
+
+}
+
+
+/* ============================= */
+/* FOOTER */
+/* ============================= */
+
+footer {
+
+    text-align: center;
+
+    color: white;
+
+    padding: 10px;
+
+    font-size: 14px;
+
+}
+
+
+/* ============================= */
+/* DARK MODE */
+/* ============================= */
+
+body.dark-mode {
+
+    background:
+        linear-gradient(
+            135deg,
+            #0f172a,
+            #1e293b
+        );
+
+    color: white;
+
+}
+
+
+body.dark-mode .weather-card {
+
+    background: rgba(30, 41, 59, 0.95);
+
+    color: white;
+
+}
+
+
+body.dark-mode .stat-card,
+
+body.dark-mode .detail-card {
+
+    background: #334155;
+
+    color: white;
+
+}
+
+
+body.dark-mode .stat-card h3,
+
+body.dark-mode .detail-card h3 {
+
+    color: #cbd5e1;
+
+}
+
+
+body.dark-mode .forecast-card,
+
+body.dark-mode .hourly-card {
+
+    background: #334155;
+
+    color: white;
+
+}
+
+
+body.dark-mode .forecast-min,
+
+body.dark-mode .hourly-condition {
+
+    color: #cbd5e1;
+
+}
+
+
+body.dark-mode .recent-city {
+
+    background: #334155;
+
+    color: white;
+
+}
+
+
+body.dark-mode .dark-mode-btn {
+
+    background: #334155;
+
+    color: white;
+
+}
+
+
+/* ============================= */
+/* TABLET */
+/* ============================= */
+
+@media (max-width: 900px) {
+
+    .header {
+
+        flex-direction: column;
+
+        gap: 20px;
+
+    }
+
+
+    .header h1 {
+
+        font-size: 40px;
+
+    }
+
+
+    .details-grid {
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+    }
+
+
+    .forecast-container {
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+    }
+
+}
+
+
+/* ============================= */
+/* MOBILE */
+/* ============================= */
+
+@media (max-width: 600px) {
+
+    body {
+
+        padding: 20px 12px;
+
+    }
+
+
+    .header h1 {
+
+        font-size: 32px;
+
+    }
+
+
+    .search-box {
+
+        flex-direction: column;
+
+    }
+
+
+    .search-box input {
+
+        width: 100%;
+
+    }
+
+
+    .search-box button {
+
+        width: 100%;
+
+    }
+
+
+    .weather-card {
+
+        padding: 25px 15px;
+
+    }
+
+
+    .weather-card h2 {
+
+        font-size: 30px;
+
+    }
+
+
+    .temperature {
+
+        font-size: 60px;
+
+    }
+
+
+    .weather-condition {
+
+        font-size: 19px;
+
+    }
+
+
+    .stats-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .details-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+
+    .forecast-container {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+/* ============================= */
+/* SMALL MOBILE */
+/* ============================= */
+
+@media (max-width: 400px) {
+
+    .header h1 {
+
+        font-size: 27px;
+
+    }
+
+
+    .details-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .forecast-container {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}

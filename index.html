@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Weather Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <header class="header">
+
+            <h1>
+                🌦️ Weather Dashboard
+            </h1>
+
+            <button id="darkModeBtn" class="dark-mode-btn">
+                🌙 Dark Mode
+            </button>
+
+        </header>
+
+
+        <!-- Search -->
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="cityInput"
+                placeholder="Enter city name"
+                autocomplete="off"
+            >
+
+            <button id="searchBtn">
+                Search
+            </button>
+
+        </div>
+
+
+        <!-- Loading / Error Message -->
+        <p id="statusMessage" class="status-message"></p>
+
+
+        <!-- Current Weather -->
+        <section class="weather-card">
+
+            <h2 id="cityName">
+                City Name
+            </h2>
+
+            <div id="weatherIcon" class="main-weather-icon">
+                🌤️
+            </div>
+
+            <div id="temperature" class="temperature">
+                --°C
+            </div>
+
+            <p id="weatherCondition" class="weather-condition">
+                Weather Condition
+            </p>
+
+
+            <!-- Main Weather Stats -->
+            <div class="stats-grid">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        💧
+                    </div>
+
+                    <h3>
+                        Humidity
+                    </h3>
+
+                    <p id="humidity">
+                        --%
+                    </p>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        💨
+                    </div>
+
+                    <h3>
+                        Wind Speed
+                    </h3>
+
+                    <p id="windSpeed">
+                        -- km/h
+                    </p>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🌡️
+                    </div>
+
+                    <h3>
+                        Feels Like
+                    </h3>
+
+                    <p id="feelsLike">
+                        --°C
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Additional Weather Details -->
+            <div class="details-grid">
+
+                <div class="detail-card">
+
+                    <span class="detail-icon">
+                        🌅
+                    </span>
+
+                    <div>
+                        <h3>
+                            Sunrise
+                        </h3>
+
+                        <p id="sunrise">
+                            --
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <span class="detail-icon">
+                        🌇
+                    </span>
+
+                    <div>
+                        <h3>
+                            Sunset
+                        </h3>
+
+                        <p id="sunset">
+                            --
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <span class="detail-icon">
+                        👁️
+                    </span>
+
+                    <div>
+                        <h3>
+                            Visibility
+                        </h3>
+
+                        <p id="visibility">
+                            -- km
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <span class="detail-icon">
+                        🌬️
+                    </span>
+
+                    <div>
+                        <h3>
+                            Pressure
+                        </h3>
+
+                        <p id="pressure">
+                            -- hPa
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="detail-card">
+
+                    <span class="detail-icon">
+                        ☁️
+                    </span>
+
+                    <div>
+                        <h3>
+                            Cloudiness
+                        </h3>
+
+                        <p id="cloudiness">
+                            --%
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- 5 Day Forecast -->
+        <section class="section">
+
+            <h2 class="section-title">
+                📅 5-Day Forecast
+            </h2>
+
+            <div
+                id="forecastContainer"
+                class="forecast-container"
+            >
+                <!-- Forecast cards generated by JavaScript -->
+            </div>
+
+        </section>
+
+
+        <!-- Hourly Forecast -->
+        <section class="section">
+
+            <h2 class="section-title">
+                🕐 Hourly Forecast
+            </h2>
+
+            <div
+                id="hourlyContainer"
+                class="hourly-container"
+            >
+                <!-- Hourly cards generated by JavaScript -->
+            </div>
+
+        </section>
+
+
+        <!-- Recent Searches -->
+        <section class="section">
+
+            <div class="recent-header">
+
+                <h2 class="section-title">
+                    📍 Recent Searches
+                </h2>
+
+                <button
+                    id="clearHistoryBtn"
+                    class="clear-btn"
+                >
+                    Clear
+                </button>
+
+            </div>
+
+            <div
+                id="recentSearches"
+                class="recent-searches"
+            >
+                <!-- Recent cities generated by JavaScript -->
+            </div>
+
+        </section>
+
+
+        <!-- Footer -->
+        <footer>
+
+            <p>
+                Weather data powered by OpenWeather
+            </p>
+
+        </footer>
+
+    </div>
+    
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>

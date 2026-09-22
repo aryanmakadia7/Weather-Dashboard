@@ -2,7 +2,7 @@
 
 ## 🚀 Live Demo
 
-[Open Weather Dashboard](https://vercel.com/aryanmakadia7/weather-dashboard/7UUzMgDehbtTotPZyZwrgkFCuC2E)
+[Open Weather Dashboard](https://weather-dashboard-hrkhlg2me-aryanmakadia7.vercel.app/)
 
 A responsive Weather Dashboard built using HTML, CSS, and JavaScript. The project uses a weather API to display real-time weather information for different cities.
 

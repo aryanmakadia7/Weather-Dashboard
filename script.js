@@ -1,19 +1,15 @@
-/* ================================= */
-/* API KEY */
-/* ================================= */
+/* =========================================================
+   WEATHER DASHBOARD - COMPLETE SCRIPT
+   Uses secure Vercel backend:
+   /api/weather?city=Pune
 
-/*
-   Your config.js should contain:
-
-   const API_KEY = "YOUR_API_KEY";
-
-   Do not put your real API key directly on GitHub.
-*/
+   No API key is used in this frontend file.
+========================================================= */
 
 
-/* ================================= */
-/* HTML ELEMENTS */
-/* ================================= */
+/* =========================================================
+   HTML ELEMENTS
+========================================================= */
 
 const cityInput = document.getElementById("cityInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -29,6 +25,7 @@ const feelsLike = document.getElementById("feelsLike");
 
 const sunrise = document.getElementById("sunrise");
 const sunset = document.getElementById("sunset");
+
 const visibility = document.getElementById("visibility");
 const pressure = document.getElementById("pressure");
 const cloudiness = document.getElementById("cloudiness");
@@ -52,84 +49,181 @@ const statusMessage =
     document.getElementById("statusMessage");
 
 
-/* ================================= */
-/* SEARCH */
-/* ================================= */
+/* =========================================================
+   CHECK REQUIRED ELEMENTS
+========================================================= */
 
-searchBtn.addEventListener("click", getWeather);
+if (
+    !cityInput ||
+    !searchBtn ||
+    !cityName ||
+    !weatherIcon ||
+    !temperature ||
+    !weatherCondition ||
+    !humidity ||
+    !windSpeed ||
+    !feelsLike ||
+    !sunrise ||
+    !sunset ||
+    !visibility ||
+    !pressure ||
+    !cloudiness ||
+    !forecastContainer ||
+    !hourlyContainer ||
+    !recentSearches ||
+    !clearHistoryBtn ||
+    !darkModeBtn ||
+    !statusMessage
+) {
+    console.error(
+        "One or more HTML elements are missing."
+    );
+}
 
-cityInput.addEventListener("keypress", function (event) {
 
-    if (event.key === "Enter") {
-        getWeather();
+/* =========================================================
+   SEARCH BUTTON
+========================================================= */
+
+searchBtn.addEventListener(
+    "click",
+    getWeather
+);
+
+
+/* =========================================================
+   ENTER KEY SEARCH
+========================================================= */
+
+cityInput.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (event.key === "Enter") {
+            getWeather();
+        }
+
     }
+);
 
-});
 
-
-/* ================================= */
-/* GET WEATHER */
-/* ================================= */
+/* =========================================================
+   GET WEATHER
+========================================================= */
 
 async function getWeather() {
 
-    const city = cityInput.value.trim();
+    const city =
+        cityInput.value.trim();
 
-    if (city === "") {
 
-        showStatus("Please enter a city name.");
+    /* -------------------------
+       VALIDATE CITY
+    ------------------------- */
+
+    if (!city) {
+
+        showStatus(
+            "Please enter a city name."
+        );
 
         return;
     }
 
-    showStatus("Loading weather...");
+
+    /* -------------------------
+       LOADING
+    ------------------------- */
+
+    showStatus(
+        "Loading weather..."
+    );
+
 
     try {
 
-        /* ------------------------- */
-        /* CURRENT WEATHER */
-        /* ------------------------- */
+        /* =================================================
+           CALL SECURE VERCEL BACKEND
+        ================================================= */
 
-        const weatherURL =
-            `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&appid=${API_KEY}`;
-
-        const weatherResponse =
-            await fetch(weatherURL);
-
-        const weatherData =
-            await weatherResponse.json();
-
-        if (!weatherResponse.ok) {
-
-            throw new Error(
-                weatherData.message ||
-                "City not found"
+        const response =
+            await fetch(
+                `/api/weather?city=${encodeURIComponent(city)}`
             );
 
+
+        /* =================================================
+           READ RESPONSE
+        ================================================= */
+
+        const data =
+            await response.json();
+
+
+        /* =================================================
+           CHECK ERROR
+        ================================================= */
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Unable to fetch weather."
+            );
         }
 
 
-        /* ------------------------- */
-        /* DISPLAY CURRENT WEATHER */
-        /* ------------------------- */
+        /* =================================================
+           VALIDATE DATA
+        ================================================= */
 
-        displayCurrentWeather(weatherData);
+        if (
+            !data.current ||
+            !data.daily ||
+            !data.hourly
+        ) {
+
+            throw new Error(
+                "Weather data is incomplete."
+            );
+        }
 
 
-        /* ------------------------- */
-        /* FORECAST */
-        /* ------------------------- */
+        /* =================================================
+           DISPLAY CURRENT WEATHER
+        ================================================= */
 
-        await getForecast(city);
+        displayCurrentWeather(data);
 
 
-        /* ------------------------- */
-        /* RECENT SEARCH */
-        /* ------------------------- */
+        /* =================================================
+           DISPLAY 5 FUTURE DAYS
+        ================================================= */
 
-        saveRecentSearch(weatherData.name);
+        displayFiveDayForecast(data);
+
+
+        /* =================================================
+           DISPLAY NEXT 8 HOURS
+        ================================================= */
+
+        displayHourlyForecast(data);
+
+
+        /* =================================================
+           RECENT SEARCH
+        ================================================= */
+
+        saveRecentSearch(
+            data.city
+        );
 
         displayRecentSearches();
+
+
+        /* =================================================
+           REMOVE STATUS MESSAGE
+        ================================================= */
 
         showStatus("");
 
@@ -137,500 +231,435 @@ async function getWeather() {
 
     catch (error) {
 
-        console.error(error);
-
-        showStatus(`Error: ${error.message}`);
-
-    }
-
-}
-
-
-/* ================================= */
-/* CURRENT WEATHER */
-/* ================================= */
-
-function displayCurrentWeather(data) {
-
-    cityName.textContent =
-        `${data.name}, ${data.sys.country}`;
-
-    temperature.textContent =
-        `${Math.round(data.main.temp)}°C`;
-
-    weatherCondition.textContent =
-        data.weather[0].description;
-
-    weatherIcon.textContent =
-        getWeatherIcon(data.weather[0].main);
-
-    humidity.textContent =
-        `${data.main.humidity}%`;
-
-    windSpeed.textContent =
-        `${(data.wind.speed * 3.6).toFixed(1)} km/h`;
-
-    feelsLike.textContent =
-        `${Math.round(data.main.feels_like)}°C`;
-
-
-    /* Sunrise */
-
-    sunrise.textContent =
-        formatTime(
-            data.sys.sunrise,
-            data.timezone
-        );
-
-
-    /* Sunset */
-
-    sunset.textContent =
-        formatTime(
-            data.sys.sunset,
-            data.timezone
-        );
-
-
-    /* Visibility */
-
-    visibility.textContent =
-        `${(data.visibility / 1000).toFixed(1)} km`;
-
-
-    /* Pressure */
-
-    pressure.textContent =
-        `${data.main.pressure} hPa`;
-
-
-    /* Cloudiness */
-
-    cloudiness.textContent =
-        `${data.clouds.all}%`;
-
-}
-
-
-/* ================================= */
-/* GET FORECAST */
-/* ================================= */
-
-async function getForecast(city) {
-
-    try {
-
-        /* ------------------------- */
-        /* GET CITY COORDINATES */
-        /* ------------------------- */
-
-        const geoURL =
-            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
-
-        const geoResponse =
-            await fetch(geoURL);
-
-        const geoData =
-            await geoResponse.json();
-
-        if (
-            !geoResponse.ok ||
-            !geoData.results ||
-            geoData.results.length === 0
-        ) {
-
-            throw new Error("Location not found");
-
-        }
-
-
-        const latitude =
-            geoData.results[0].latitude;
-
-        const longitude =
-            geoData.results[0].longitude;
-
-
-        /* ------------------------- */
-        /* OPEN-METEO FORECAST */
-        /* ------------------------- */
-
-        const forecastURL =
-            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
-            `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,pressure_msl,visibility,wind_speed_10m` +
-            `&hourly=temperature_2m,weather_code` +
-            `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset` +
-            `&timezone=auto&forecast_days=6`;
-
-        const response =
-            await fetch(forecastURL);
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error("Forecast unavailable");
-
-        }
-
-
-        /* ================================= */
-        /* 5 FUTURE DAYS */
-        /* ================================= */
-
-        const dailyData = [];
-
-
-        /*
-           IMPORTANT:
-
-           daily[0] = TODAY
-           daily[1] = TOMORROW
-           daily[2] = DAY 2
-           daily[3] = DAY 3
-           daily[4] = DAY 4
-           daily[5] = DAY 5
-
-           Therefore we SKIP daily[0].
-
-           Example:
-
-           Today = Tuesday
-
-           Display:
-           Wednesday
-           Thursday
-           Friday
-           Saturday
-           Sunday
-        */
-
-        for (
-            let i = 1;
-            i <= 5 &&
-            i < data.daily.time.length;
-            i++
-        ) {
-
-            dailyData.push({
-
-                date:
-                    data.daily.time[i],
-
-                min:
-                    data.daily.temperature_2m_min[i],
-
-                max:
-                    data.daily.temperature_2m_max[i],
-
-                weather: {
-
-                    main:
-                        convertWeatherCode(
-                            data.daily.weather_code[i]
-                        )
-
-                }
-
-            });
-
-        }
-
-
-        /* Display 5-day forecast */
-
-        displayFiveDayForecast(
-            dailyData
-        );
-
-
-        /* ================================= */
-        /* HOURLY FORECAST */
-        /* ================================= */
-
-        const hourlyData = [];
-
-
-        /*
-           IMPORTANT HOURLY TIME FIX
-
-           Open-Meteo gives the hourly times in
-           the city's local timezone because:
-
-           timezone=auto
-
-           We DO NOT use:
-
-           new Date().toISOString()
-
-           because that converts the browser's
-           local time into UTC.
-
-           Instead we use Open-Meteo's own
-           current local time.
-        */
-
-        let currentHourKey;
-
-
-        if (
-            data.current &&
-            data.current.time
-        ) {
-
-            /*
-               Example:
-
-               data.current.time:
-
-               2026-09-22T22:38
-
-               becomes:
-
-               2026-09-22T22
-            */
-
-            currentHourKey =
-                data.current.time.slice(0, 13);
-
-        }
-
-        else {
-
-            /*
-               Backup method
-            */
-
-            const now =
-                new Date();
-
-            currentHourKey =
-                now.getFullYear() +
-                "-" +
-                String(
-                    now.getMonth() + 1
-                ).padStart(2, "0") +
-                "-" +
-                String(
-                    now.getDate()
-                ).padStart(2, "0") +
-                "T" +
-                String(
-                    now.getHours()
-                ).padStart(2, "0");
-
-        }
-
-
-        /*
-           Find the NEXT full hour.
-
-           If current time is:
-
-           10:38 PM
-
-           currentHourKey:
-
-           2026-09-22T22
-
-           We want:
-
-           2026-09-22T23
-
-           Therefore we use > instead of >=.
-        */
-
-        let startIndex = -1;
-
-
-        for (
-            let i = 0;
-            i < data.hourly.time.length;
-            i++
-        ) {
-
-            const hourlyKey =
-                data.hourly.time[i].slice(0, 13);
-
-
-            if (
-                hourlyKey >
-                currentHourKey
-            ) {
-
-                startIndex = i;
-
-                break;
-
-            }
-
-        }
-
-
-        /*
-           If something goes wrong,
-           start from the first available hour.
-        */
-
-        if (startIndex === -1) {
-
-            startIndex = 0;
-
-        }
-
-
-        /*
-           Get next 8 complete hours.
-        */
-
-        for (
-            let i = startIndex;
-            i < startIndex + 8 &&
-            i < data.hourly.time.length;
-            i++
-        ) {
-
-            hourlyData.push({
-
-                time:
-                    data.hourly.time[i],
-
-                main: {
-
-                    temp:
-                        data.hourly.temperature_2m[i]
-
-                },
-
-                weather: [
-
-                    {
-
-                        main:
-                            convertWeatherCode(
-                                data.hourly.weather_code[i]
-                            ),
-
-                        description:
-                            getWeatherDescription(
-                                data.hourly.weather_code[i]
-                            )
-
-                    }
-
-                ]
-
-            });
-
-        }
-
-
-        /* Display hourly forecast */
-
-        displayHourlyForecastOpenMeteo(
-            hourlyData
-        );
-
-    }
-
-    catch (error) {
-
         console.error(
-            "Forecast error:",
+            "Weather Error:",
             error
         );
 
 
-        /*
-           Forecast failure should NOT
-           destroy current weather.
-        */
-
-        forecastContainer.innerHTML =
-            "<p>Forecast temporarily unavailable.</p>";
-
-        hourlyContainer.innerHTML =
-            "<p>Hourly forecast temporarily unavailable.</p>";
+        showStatus(
+            `Error: ${error.message}`
+        );
 
     }
+}
+
+
+/* =========================================================
+   DISPLAY CURRENT WEATHER
+========================================================= */
+
+function displayCurrentWeather(data) {
+
+    const current =
+        data.current;
+
+
+    /* =================================================
+       CITY
+    ================================================= */
+
+    cityName.textContent =
+        data.country
+            ? `${data.city}, ${data.country}`
+            : data.city;
+
+
+    /* =================================================
+       TEMPERATURE
+    ================================================= */
+
+    temperature.textContent =
+        `${Math.round(current.temperature_2m)}°C`;
+
+
+    /* =================================================
+       WEATHER CONDITION
+    ================================================= */
+
+    weatherCondition.textContent =
+        getWeatherDescription(
+            current.weather_code
+        );
+
+
+    /* =================================================
+       CURRENT WEATHER ICON
+
+       Clear sky:
+       Day   = ☀️
+       Night = 🌙
+
+       Other weather conditions stay the same.
+    ================================================= */
+
+    const currentIsNight =
+        isCurrentNight(data);
+
+    weatherIcon.textContent =
+        getWeatherIcon(
+            convertWeatherCode(
+                current.weather_code
+            ),
+            currentIsNight
+        );
+
+
+    /* =================================================
+       HUMIDITY
+    ================================================= */
+
+    humidity.textContent =
+        `${Math.round(
+            current.relative_humidity_2m
+        )}%`;
+
+
+    /* =================================================
+       WIND SPEED
+
+       Open-Meteo gives km/h because
+       wind_speed_unit is not changed.
+    ================================================= */
+
+    windSpeed.textContent =
+        `${Math.round(
+            current.wind_speed_10m
+        )} km/h`;
+
+
+    /* =================================================
+       FEELS LIKE
+    ================================================= */
+
+    feelsLike.textContent =
+        `${Math.round(
+            current.apparent_temperature
+        )}°C`;
+
+
+    /* =================================================
+       SUNRISE
+    ================================================= */
+
+    if (
+        data.daily &&
+        data.daily.sunrise &&
+        data.daily.sunrise.length > 0
+    ) {
+
+        sunrise.textContent =
+            formatOpenMeteoTime(
+                data.daily.sunrise[0]
+            );
+
+    }
+    else {
+
+        sunrise.textContent =
+            "--";
+
+    }
+
+
+    /* =================================================
+       SUNSET
+    ================================================= */
+
+    if (
+        data.daily &&
+        data.daily.sunset &&
+        data.daily.sunset.length > 0
+    ) {
+
+        sunset.textContent =
+            formatOpenMeteoTime(
+                data.daily.sunset[0]
+            );
+
+    }
+    else {
+
+        sunset.textContent =
+            "--";
+
+    }
+
+
+    /* =================================================
+       VISIBILITY
+    ================================================= */
+
+    if (
+        typeof current.visibility === "number"
+    ) {
+
+        visibility.textContent =
+            `${(
+                current.visibility / 1000
+            ).toFixed(1)} km`;
+
+    }
+    else {
+
+        visibility.textContent =
+            "-- km";
+
+    }
+
+
+    /* =================================================
+       PRESSURE
+    ================================================= */
+
+    pressure.textContent =
+        `${Math.round(
+            current.surface_pressure
+        )} hPa`;
+
+
+    /* =================================================
+       CLOUDINESS
+    ================================================= */
+
+    cloudiness.textContent =
+        `${Math.round(
+            current.cloud_cover
+        )}%`;
 
 }
 
 
-/* ================================= */
-/* DISPLAY 5-DAY FORECAST */
-/* ================================= */
+/* =========================================================
+   DETERMINE CURRENT DAY/NIGHT
 
-function displayFiveDayForecast(days) {
+   Uses the selected city's local sunrise/sunset,
+   NOT the user's computer timezone.
+========================================================= */
+
+function isCurrentNight(data) {
+
+    if (
+        !data.daily ||
+        !data.daily.sunrise ||
+        !data.daily.sunset ||
+        !data.current ||
+        !data.current.time
+    ) {
+
+        return false;
+
+    }
+
+
+    const currentTime =
+        data.current.time;
+
+    const sunriseTime =
+        data.daily.sunrise[0];
+
+    const sunsetTime =
+        data.daily.sunset[0];
+
+
+    if (
+        !sunriseTime ||
+        !sunsetTime
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+       Open-Meteo returns local time when
+       timezone=auto is used.
+
+       Example:
+
+       2026-09-23T06:15
+       2026-09-23T18:25
+    */
+
+    return (
+        currentTime < sunriseTime ||
+        currentTime >= sunsetTime
+    );
+
+}
+
+
+/* =========================================================
+   DISPLAY 5 FUTURE DAYS
+========================================================= */
+
+function displayFiveDayForecast(data) {
 
     forecastContainer.innerHTML = "";
 
 
-    days.forEach(function (day) {
+    if (
+        !data.daily ||
+        !data.daily.time
+    ) {
 
-        const card =
-            document.createElement("div");
+        forecastContainer.innerHTML =
+            "<p>No forecast available.</p>";
 
-        card.className =
-            "forecast-card";
+        return;
+
+    }
 
 
-        /*
-           Add noon time so the date does not
-           shift because of timezone conversion.
-        */
+    const daily =
+        data.daily;
 
-        const date =
-            new Date(
-                `${day.date}T12:00:00`
+
+    /*
+       IMPORTANT
+
+       daily[0] = TODAY
+
+       daily[1] = TOMORROW
+       daily[2] = DAY 2
+       daily[3] = DAY 3
+       daily[4] = DAY 4
+       daily[5] = DAY 5
+
+       We SKIP daily[0].
+
+       Therefore exactly 5 future days
+       are displayed.
+    */
+
+
+    const futureDays = [];
+
+
+    for (
+        let i = 1;
+        i <= 5 &&
+        i < daily.time.length;
+        i++
+    ) {
+
+        futureDays.push({
+
+            date:
+                daily.time[i],
+
+            min:
+                daily.temperature_2m_min[i],
+
+            max:
+                daily.temperature_2m_max[i],
+
+            weatherCode:
+                daily.weather_code[i],
+
+            sunrise:
+                daily.sunrise
+                    ? daily.sunrise[i]
+                    : null,
+
+            sunset:
+                daily.sunset
+                    ? daily.sunset[i]
+                    : null
+
+        });
+
+    }
+
+
+    /* =================================================
+       DISPLAY CARDS
+    ================================================= */
+
+    futureDays.forEach(
+        function (day) {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "forecast-card";
+
+
+            /* -------------------------
+               DATE
+            ------------------------- */
+
+            const date =
+                new Date(
+                    `${day.date}T12:00:00`
+                );
+
+
+            const dayName =
+                date.toLocaleDateString(
+                    "en-US",
+                    {
+                        weekday: "short"
+                    }
+                );
+
+
+            /* =================================================
+               DAY/NIGHT ICON FOR FORECAST
+
+               We use midday for the 5-day card.
+               Therefore clear weather normally uses ☀️.
+
+               The current/hourly sections handle actual
+               nighttime separately.
+            ================================================= */
+
+            const icon =
+                getWeatherIcon(
+                    convertWeatherCode(
+                        day.weatherCode
+                    ),
+                    false
+                );
+
+
+            card.innerHTML = `
+
+                <div class="forecast-day">
+                    ${dayName}
+                </div>
+
+                <div class="forecast-icon">
+                    ${icon}
+                </div>
+
+                <div class="forecast-max">
+                    ${Math.round(day.max)}°C
+                </div>
+
+                <div class="forecast-min">
+                    Min ${Math.round(day.min)}°C
+                </div>
+
+            `;
+
+
+            forecastContainer.appendChild(
+                card
             );
 
-
-        const dayName =
-            date.toLocaleDateString(
-                "en-US",
-                {
-                    weekday: "short"
-                }
-            );
+        }
+    );
 
 
-        card.innerHTML = `
-
-            <div class="forecast-day">
-                ${dayName}
-            </div>
-
-            <div class="forecast-icon">
-                ${getWeatherIcon(
-                    day.weather.main
-                )}
-            </div>
-
-            <div class="forecast-max">
-                ${Math.round(
-                    day.max
-                )}°C
-            </div>
-
-            <div class="forecast-min">
-                Min ${Math.round(
-                    day.min
-                )}°C
-            </div>
-
-        `;
-
-
-        forecastContainer.appendChild(
-            card
-        );
-
-    });
-
-
-    if (days.length === 0) {
+    if (
+        futureDays.length === 0
+    ) {
 
         forecastContainer.innerHTML =
             "<p>No forecast available.</p>";
@@ -640,113 +669,180 @@ function displayFiveDayForecast(days) {
 }
 
 
-/* ================================= */
-/* DISPLAY HOURLY FORECAST */
-/* ================================= */
+/* =========================================================
+   DISPLAY HOURLY FORECAST
+========================================================= */
 
-function displayHourlyForecastOpenMeteo(
-    forecastList
-) {
+function displayHourlyForecast(data) {
 
     hourlyContainer.innerHTML = "";
 
 
-    forecastList.forEach(
-        function (item) {
+    if (
+        !data.hourly ||
+        !data.hourly.time ||
+        !data.hourly.temperature_2m ||
+        !data.hourly.weather_code
+    ) {
 
-            const card =
-                document.createElement("div");
+        hourlyContainer.innerHTML =
+            "<p>No hourly forecast available.</p>";
 
+        return;
 
-            card.className =
-                "hourly-card";
-
-
-            /*
-               Open-Meteo gives the time
-               in the city's local timezone.
-
-               Add T00 handling by treating the
-               string as a local-style timestamp.
-            */
-
-            const [datePart, timePart] =
-                item.time.split("T");
+    }
 
 
-            const [
-                hourString,
-                minuteString
-            ] =
-                timePart.split(":");
+    const hourly =
+        data.hourly;
 
 
-            let hour =
-                parseInt(
-                    hourString,
-                    10
-                );
+    /* =================================================
+       FIND CURRENT HOUR
+
+       Open-Meteo's timezone=auto means its
+       time values are for the selected city.
+
+       We therefore compare the strings directly.
+    ================================================= */
+
+    const currentTime =
+        data.current &&
+        data.current.time
+            ? data.current.time
+            : "";
 
 
-            const minute =
-                minuteString;
+    const currentHour =
+        currentTime.substring(
+            0,
+            13
+        );
 
 
-            const period =
-                hour >= 12
-                    ? "PM"
-                    : "AM";
+    let startIndex = 0;
 
 
-            let displayHour =
-                hour % 12;
+    for (
+        let i = 0;
+        i < hourly.time.length;
+        i++
+    ) {
 
-
-            if (displayHour === 0) {
-
-                displayHour = 12;
-
-            }
-
-
-            const time =
-                `${String(displayHour).padStart(2, "0")}:${minute} ${period}`;
-
-
-            card.innerHTML = `
-
-                <div class="hourly-time">
-                    ${time}
-                </div>
-
-                <div class="hourly-icon">
-                    ${getWeatherIcon(
-                        item.weather[0].main
-                    )}
-                </div>
-
-                <div class="hourly-temp">
-                    ${Math.round(
-                        item.main.temp
-                    )}°C
-                </div>
-
-                <div class="hourly-condition">
-                    ${item.weather[0].description}
-                </div>
-
-            `;
-
-
-            hourlyContainer.appendChild(
-                card
+        const hour =
+            hourly.time[i].substring(
+                0,
+                13
             );
 
+
+        if (
+            hour >= currentHour
+        ) {
+
+            startIndex = i;
+
+            break;
+
         }
-    );
+
+    }
 
 
-    if (forecastList.length === 0) {
+    /* =================================================
+       SHOW NEXT 8 HOURS
+    ================================================= */
+
+    const endIndex =
+        Math.min(
+            startIndex + 8,
+            hourly.time.length
+        );
+
+
+    for (
+        let i = startIndex;
+        i < endIndex;
+        i++
+    ) {
+
+        const time =
+            hourly.time[i];
+
+
+        const temperatureValue =
+            hourly.temperature_2m[i];
+
+
+        const weatherCode =
+            hourly.weather_code[i];
+
+
+        /* =================================================
+           DETERMINE WHETHER THIS HOURLY CARD IS NIGHT
+        ================================================= */
+
+        const night =
+            isHourlyNight(
+                data,
+                time
+            );
+
+
+        const condition =
+            convertWeatherCode(
+                weatherCode
+            );
+
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "hourly-card";
+
+
+        card.innerHTML = `
+
+            <div class="hourly-time">
+                ${formatOpenMeteoTime(time)}
+            </div>
+
+            <div class="hourly-icon">
+                ${getWeatherIcon(
+                    condition,
+                    night
+                )}
+            </div>
+
+            <div class="hourly-temp">
+                ${Math.round(
+                    temperatureValue
+                )}°C
+            </div>
+
+            <div class="hourly-condition">
+                ${getWeatherDescription(
+                    weatherCode
+                )}
+            </div>
+
+        `;
+
+
+        hourlyContainer.appendChild(
+            card
+        );
+
+    }
+
+
+    if (
+        hourlyContainer.children.length === 0
+    ) {
 
         hourlyContainer.innerHTML =
             "<p>No hourly forecast available.</p>";
@@ -756,13 +852,104 @@ function displayHourlyForecastOpenMeteo(
 }
 
 
-/* ================================= */
-/* WEATHER CODE CONVERTER */
-/* ================================= */
+/* =========================================================
+   CHECK IF HOURLY TIME IS NIGHT
+========================================================= */
 
-function convertWeatherCode(code) {
+function isHourlyNight(
+    data,
+    hourlyTime
+) {
 
-    /* Clear */
+    if (
+        !data.daily ||
+        !data.daily.time ||
+        !data.daily.sunrise ||
+        !data.daily.sunset
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+       Find which date the hourly time belongs to.
+    */
+
+    const date =
+        hourlyTime.substring(
+            0,
+            10
+        );
+
+
+    const dayIndex =
+        data.daily.time.indexOf(
+            date
+        );
+
+
+    if (
+        dayIndex === -1
+    ) {
+
+        return false;
+
+    }
+
+
+    const sunriseTime =
+        data.daily.sunrise[dayIndex];
+
+    const sunsetTime =
+        data.daily.sunset[dayIndex];
+
+
+    if (
+        !sunriseTime ||
+        !sunsetTime
+    ) {
+
+        return false;
+
+    }
+
+
+    /*
+       Clear sky at night = moon.
+
+       For example:
+
+       sunrise = 06:10
+       sunset  = 18:25
+
+       01:00 -> night
+       05:00 -> night
+       07:00 -> day
+       15:00 -> day
+       20:00 -> night
+    */
+
+    return (
+        hourlyTime < sunriseTime ||
+        hourlyTime >= sunsetTime
+    );
+
+}
+
+
+/* =========================================================
+   WEATHER CODE CONVERTER
+========================================================= */
+
+function convertWeatherCode(
+    code
+) {
+
+    /* -------------------------
+       CLEAR
+    ------------------------- */
 
     if (code === 0) {
 
@@ -771,7 +958,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Mainly clear / cloudy */
+    /* -------------------------
+       CLOUDS
+    ------------------------- */
 
     if (
         code === 1 ||
@@ -784,7 +973,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Fog */
+    /* -------------------------
+       FOG
+    ------------------------- */
 
     if (
         code === 45 ||
@@ -796,7 +987,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Drizzle */
+    /* -------------------------
+       DRIZZLE
+    ------------------------- */
 
     if (
         code === 51 ||
@@ -811,7 +1004,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Rain */
+    /* -------------------------
+       RAIN
+    ------------------------- */
 
     if (
         code === 61 ||
@@ -829,7 +1024,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Snow */
+    /* -------------------------
+       SNOW
+    ------------------------- */
 
     if (
         code === 71 ||
@@ -845,7 +1042,9 @@ function convertWeatherCode(code) {
     }
 
 
-    /* Thunderstorm */
+    /* -------------------------
+       THUNDERSTORM
+    ------------------------- */
 
     if (
         code === 95 ||
@@ -863,138 +1062,152 @@ function convertWeatherCode(code) {
 }
 
 
-/* ================================= */
-/* WEATHER DESCRIPTION */
-/* ================================= */
+/* =========================================================
+   WEATHER DESCRIPTION
+========================================================= */
 
-function getWeatherDescription(code) {
+function getWeatherDescription(
+    code
+) {
 
     if (code === 0) {
-
-        return "clear sky";
-
+        return "Clear sky";
     }
-
 
     if (code === 1) {
-
-        return "mainly clear";
-
+        return "Mainly clear";
     }
-
 
     if (code === 2) {
-
-        return "partly cloudy";
-
+        return "Partly cloudy";
     }
-
 
     if (code === 3) {
-
-        return "overcast";
-
+        return "Overcast";
     }
-
 
     if (
         code === 45 ||
         code === 48
     ) {
-
-        return "foggy";
-
+        return "Foggy";
     }
-
 
     if (
         code >= 51 &&
         code <= 57
     ) {
-
-        return "drizzle";
-
+        return "Drizzle";
     }
-
 
     if (
         code >= 61 &&
         code <= 67
     ) {
-
-        return "rain";
-
+        return "Rain";
     }
-
 
     if (
         code >= 71 &&
         code <= 77
     ) {
-
-        return "snow";
-
+        return "Snow";
     }
-
 
     if (
         code >= 80 &&
         code <= 82
     ) {
-
-        return "rain showers";
-
+        return "Rain showers";
     }
 
-
-    if (code >= 95) {
-
-        return "thunderstorm";
-
+    if (
+        code >= 95 &&
+        code <= 99
+    ) {
+        return "Thunderstorm";
     }
 
-
-    return "cloudy";
+    return "Cloudy";
 
 }
 
 
-/* ================================= */
-/* WEATHER ICONS */
-/* ================================= */
-/* ================================= */
-/* WEATHER ICONS */
-/* ================================= */
+/* =========================================================
+   WEATHER ICONS
+========================================================= */
 
-function getWeatherIcon(condition, isNight = false) {
+function getWeatherIcon(
+    condition,
+    isNight = false
+) {
 
     switch (condition) {
 
-        /* Clear sky */
-        case "Clear":
-            return isNight ? "🌙" : "☀️";
+        /* -------------------------
+           CLEAR
+        ------------------------- */
 
-        /* Clouds */
+        case "Clear":
+
+            if (isNight) {
+
+                return "🌙";
+
+            }
+
+            return "☀️";
+
+
+        /* -------------------------
+           CLOUDS
+        ------------------------- */
+
         case "Clouds":
+
             return "☁️";
 
-        /* Rain */
+
+        /* -------------------------
+           RAIN
+        ------------------------- */
+
         case "Rain":
+
             return "🌧️";
 
-        /* Drizzle */
+
+        /* -------------------------
+           DRIZZLE
+        ------------------------- */
+
         case "Drizzle":
+
             return "🌦️";
 
-        /* Thunderstorm */
+
+        /* -------------------------
+           THUNDERSTORM
+        ------------------------- */
+
         case "Thunderstorm":
+
             return "⛈️";
 
-        /* Snow */
+
+        /* -------------------------
+           SNOW
+        ------------------------- */
+
         case "Snow":
+
             return "❄️";
 
-        /* Fog / Mist / Haze */
+
+        /* -------------------------
+           MIST / FOG
+        ------------------------- */
+
         case "Mist":
         case "Fog":
         case "Haze":
@@ -1002,77 +1215,132 @@ function getWeatherIcon(condition, isNight = false) {
         case "Dust":
         case "Sand":
         case "Ash":
+
             return "🌫️";
 
-        /* Squall */
+
+        /* -------------------------
+           SQUALL
+        ------------------------- */
+
         case "Squall":
+
             return "💨";
 
-        /* Tornado */
+
+        /* -------------------------
+           TORNADO
+        ------------------------- */
+
         case "Tornado":
+
             return "🌪️";
 
-        /* Default */
+
+        /* -------------------------
+           DEFAULT
+        ------------------------- */
+
         default:
-            return isNight ? "🌙" : "🌤️";
+
+            return isNight
+                ? "🌙"
+                : "🌤️";
+
     }
+
 }
 
-/* ================================= */
-/* FORMAT TIME */
-/* ================================= */
 
-function formatTime(
-    timestamp,
-    timezoneOffset
+/* =========================================================
+   FORMAT OPEN-METEO TIME
+========================================================= */
+
+function formatOpenMeteoTime(
+    dateTime
 ) {
 
-    const date =
-        new Date(
-            (timestamp + timezoneOffset) * 1000
+    if (
+        !dateTime
+    ) {
+
+        return "--";
+
+    }
+
+
+    /*
+       Example:
+
+       2026-09-23T18:30
+
+       becomes:
+
+       06:30 PM
+    */
+
+
+    const timePart =
+        dateTime.substring(
+            11,
+            16
         );
 
 
-    return date.toLocaleTimeString(
-        "en-US",
-        {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: "UTC"
-        }
-    );
+    if (
+        !timePart
+    ) {
 
-}
+        return "--";
+
+    }
 
 
-/* ================================= */
-/* LOCAL DATE KEY */
-/* ================================= */
+    const parts =
+        timePart.split(":");
 
-function getLocalDateKey(
-    timestamp,
-    timezoneOffset
-) {
 
-    const date =
-        new Date(
-            (timestamp + timezoneOffset) * 1000
+    let hour =
+        parseInt(
+            parts[0],
+            10
         );
 
 
-    return date
-        .toISOString()
-        .split("T")[0];
+    const minute =
+        parts[1];
+
+
+    const period =
+        hour >= 12
+            ? "PM"
+            : "AM";
+
+
+    if (hour === 0) {
+
+        hour = 12;
+
+    }
+    else if (hour > 12) {
+
+        hour -= 12;
+
+    }
+
+
+    return `${String(hour).padStart(2, "0")}:${minute} ${period}`;
 
 }
 
 
-/* ================================= */
-/* STATUS MESSAGE */
-/* ================================= */
+/* =========================================================
+   STATUS MESSAGE
+========================================================= */
 
-function showStatus(message) {
+function showStatus(
+    message
+) {
 
     statusMessage.textContent =
         message;
@@ -1080,11 +1348,13 @@ function showStatus(message) {
 }
 
 
-/* ================================= */
-/* RECENT SEARCHES */
-/* ================================= */
+/* =========================================================
+   RECENT SEARCHES
+========================================================= */
 
-function saveRecentSearch(city) {
+function saveRecentSearch(
+    city
+) {
 
     let searches =
         JSON.parse(
@@ -1101,23 +1371,28 @@ function saveRecentSearch(city) {
             function (item) {
 
                 return (
-                    item.toLowerCase() !==
-                    city.toLowerCase()
+                    item.toLowerCase()
+                    !== city.toLowerCase()
                 );
 
             }
         );
 
 
-    /* Add city at beginning */
+    /* Add latest city first */
 
-    searches.unshift(city);
+    searches.unshift(
+        city
+    );
 
 
-    /* Keep only 5 */
+    /* Keep maximum 5 */
 
     searches =
-        searches.slice(0, 5);
+        searches.slice(
+            0,
+            5
+        );
 
 
     localStorage.setItem(
@@ -1128,9 +1403,9 @@ function saveRecentSearch(city) {
 }
 
 
-/* ================================= */
-/* DISPLAY RECENT SEARCHES */
-/* ================================= */
+/* =========================================================
+   DISPLAY RECENT SEARCHES
+========================================================= */
 
 function displayRecentSearches() {
 
@@ -1142,10 +1417,13 @@ function displayRecentSearches() {
         ) || [];
 
 
-    recentSearches.innerHTML = "";
+    recentSearches.innerHTML =
+        "";
 
 
-    if (searches.length === 0) {
+    if (
+        searches.length === 0
+    ) {
 
         recentSearches.innerHTML =
             "<p>No recent searches yet.</p>";
@@ -1159,7 +1437,9 @@ function displayRecentSearches() {
         function (city) {
 
             const button =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
 
 
             button.className =
@@ -1193,9 +1473,9 @@ function displayRecentSearches() {
 }
 
 
-/* ================================= */
-/* CLEAR RECENT SEARCHES */
-/* ================================= */
+/* =========================================================
+   CLEAR RECENT SEARCHES
+========================================================= */
 
 clearHistoryBtn.addEventListener(
     "click",
@@ -1205,15 +1485,16 @@ clearHistoryBtn.addEventListener(
             "weatherSearches"
         );
 
+
         displayRecentSearches();
 
     }
 );
 
 
-/* ================================= */
-/* DARK MODE */
-/* ================================= */
+/* =========================================================
+   DARK MODE
+========================================================= */
 
 darkModeBtn.addEventListener(
     "click",
@@ -1242,9 +1523,9 @@ darkModeBtn.addEventListener(
 );
 
 
-/* ================================= */
-/* DARK MODE BUTTON TEXT */
-/* ================================= */
+/* =========================================================
+   DARK MODE BUTTON
+========================================================= */
 
 function updateDarkModeButton() {
 
@@ -1260,7 +1541,6 @@ function updateDarkModeButton() {
             "☀️ Light Mode";
 
     }
-
     else {
 
         darkModeBtn.textContent =
@@ -1271,9 +1551,9 @@ function updateDarkModeButton() {
 }
 
 
-/* ================================= */
-/* LOAD DARK MODE */
-/* ================================= */
+/* =========================================================
+   LOAD DARK MODE
+========================================================= */
 
 function loadDarkMode() {
 
@@ -1283,7 +1563,9 @@ function loadDarkMode() {
         );
 
 
-    if (darkMode === "true") {
+    if (
+        darkMode === "true"
+    ) {
 
         document.body.classList.add(
             "dark-mode"
@@ -1297,9 +1579,9 @@ function loadDarkMode() {
 }
 
 
-/* ================================= */
-/* INITIALIZE */
-/* ================================= */
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
 displayRecentSearches();
 

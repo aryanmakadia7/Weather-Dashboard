@@ -1,77 +1,50 @@
 export default async function handler(req, res) {
+
     try {
+
         const city = req.query.city;
 
-        if (!city || typeof city !== "string" || !city.trim()) {
+        if (!city) {
             return res.status(400).json({
-                error: "City name is required"
+                error: "City is required"
             });
         }
 
-        // Get coordinates
-        const geoURL =
-            `https://geocoding-api.open-meteo.com/v1/search` +
-            `?name=${encodeURIComponent(city.trim())}` +
-            `&count=1` +
-            `&language=en` +
-            `&format=json`;
+        const API_KEY =
+            process.env.OPENWEATHER_API_KEY;
 
-        const geoResponse = await fetch(geoURL);
-        const geoData = await geoResponse.json();
-
-        if (
-            !geoResponse.ok ||
-            !geoData.results ||
-            geoData.results.length === 0
-        ) {
-            return res.status(404).json({
-                error: `City "${city}" not found`
+        if (!API_KEY) {
+            return res.status(500).json({
+                error: "API key is not configured"
             });
         }
 
-        const location = geoData.results[0];
+        const url =
+            `https://api.openweathermap.org/data/2.5/weather` +
+            `?q=${encodeURIComponent(city)}` +
+            `&units=metric` +
+            `&appid=${API_KEY}`;
 
-        const latitude = location.latitude;
-        const longitude = location.longitude;
-        const name = location.name;
-        const country = location.country || "";
+        const response = await fetch(url);
 
-        // Get weather
-        const weatherURL =
-            `https://api.open-meteo.com/v1/forecast` +
-            `?latitude=${latitude}` +
-            `&longitude=${longitude}` +
-            `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,cloud_cover,surface_pressure,visibility,wind_speed_10m` +
-            `&hourly=temperature_2m,weather_code,visibility` +
-            `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset` +
-            `&timezone=auto` +
-            `&forecast_days=7`;
+        const data = await response.json();
 
-        const weatherResponse = await fetch(weatherURL);
-        const weatherData = await weatherResponse.json();
-
-        if (!weatherResponse.ok) {
-            return res.status(502).json({
-                error: "Weather provider request failed"
+        if (!response.ok) {
+            return res.status(response.status).json({
+                error: data.message || "Weather request failed"
             });
         }
 
-        return res.status(200).json({
-            city: name,
-            country: country,
-            latitude: latitude,
-            longitude: longitude,
-            timezone: weatherData.timezone,
-            current: weatherData.current,
-            hourly: weatherData.hourly,
-            daily: weatherData.daily
-        });
+        return res.status(200).json(data);
 
     } catch (error) {
-        console.error("Weather API Error:", error);
+
+        console.error(error);
 
         return res.status(500).json({
-            error: error.message || "Internal server error"
+            error: "Server error"
         });
+
     }
+
 }

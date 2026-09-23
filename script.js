@@ -962,76 +962,61 @@ function getWeatherDescription(code) {
 /* ================================= */
 /* WEATHER ICONS */
 /* ================================= */
+/* ================================= */
+/* WEATHER ICONS */
+/* ================================= */
 
-function getWeatherIcon(condition) {
+function getWeatherIcon(condition, isNight = false) {
 
     switch (condition) {
 
+        /* Clear sky */
         case "Clear":
+            return isNight ? "🌙" : "☀️";
 
-            return "☀️";
-
-
+        /* Clouds */
         case "Clouds":
-
             return "☁️";
 
-
+        /* Rain */
         case "Rain":
-
             return "🌧️";
 
-
+        /* Drizzle */
         case "Drizzle":
-
             return "🌦️";
 
-
+        /* Thunderstorm */
         case "Thunderstorm":
-
             return "⛈️";
 
-
+        /* Snow */
         case "Snow":
-
             return "❄️";
 
-
+        /* Fog / Mist / Haze */
         case "Mist":
-
         case "Fog":
-
         case "Haze":
-
         case "Smoke":
-
         case "Dust":
-
         case "Sand":
-
         case "Ash":
-
             return "🌫️";
 
-
+        /* Squall */
         case "Squall":
-
             return "💨";
 
-
+        /* Tornado */
         case "Tornado":
-
             return "🌪️";
 
-
+        /* Default */
         default:
-
-            return "🌤️";
-
+            return isNight ? "🌙" : "🌤️";
     }
-
 }
-
 
 /* ================================= */
 /* FORMAT TIME */
